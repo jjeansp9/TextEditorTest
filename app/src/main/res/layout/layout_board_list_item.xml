@@ -25,7 +25,9 @@
             app:layout_constraintEnd_toStartOf="@id/img"
             android:textSize="16sp"
             android:textStyle="bold"
-            android:text="@{item.title == null ? (`제목 없음`) : item.title}"/>
+            android:hint="제목 없음"
+            android:text="@{item.title == null | item.title.isEmpty() ? (``) : item.title}"
+            android:visibility="@{item.title == null | item.title.isEmpty() ? View.GONE : View.VISIBLE}"/>
 
         <TextView
             android:id="@+id/tv_content"
@@ -36,7 +38,9 @@
             app:layout_constraintEnd_toStartOf="@id/img"
             android:layout_marginTop="8dp"
             android:textSize="14sp"
-            android:text="@{item.content == null ? (`내용 없음`) : item.content}"/>
+            android:hint="내용 없음"
+            android:text="@{item.content == null | item.content.isEmpty() ? (``) : item.content}"
+            android:visibility="@{item.content == null | item.content.isEmpty() ? View.GONE : View.VISIBLE}"/>
 
         <ImageView
             android:id="@+id/img"

@@ -22,12 +22,16 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.annotation.NonNull
+import androidx.lifecycle.lifecycleScope
 import com.example.texteditortest.R
 import com.example.texteditortest.common.MyWebViewClient
 import com.example.texteditortest.databinding.ActivityUploadBinding
+import com.example.texteditortest.network.FunctionJS
+import com.example.texteditortest.network.ResponseCode
 import com.example.texteditortest.utils.LogMgr
 import com.example.texteditortest.viewmodel.UploadViewModel
 import com.google.gson.Gson
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.IOException
 import java.net.URLDecoder
@@ -110,6 +114,7 @@ class UploadActivity : BaseActivity<ActivityUploadBinding>(R.layout.activity_upl
         binding.lifecycleOwner = this
 
         onClick()
+        observe()
         setWeb()
     }
 
@@ -124,7 +129,7 @@ class UploadActivity : BaseActivity<ActivityUploadBinding>(R.layout.activity_upl
         webSettings.domStorageEnabled = true
 
         binding.wv.setLayerType(View.LAYER_TYPE_HARDWARE, null)
-        binding.wv.addJavascriptInterface(getEditData(::onReceiveJavascript), "Android") // HTML 문서에도 동일하게 작성 window.Android....
+        //binding.wv.addJavascriptInterface(getEditData(::onReceiveJavascript), "Android") // HTML 문서에도 동일하게 작성 window.Android....
 
         // 파일 허용
         webSettings.allowContentAccess = true
@@ -188,10 +193,34 @@ class UploadActivity : BaseActivity<ActivityUploadBinding>(R.layout.activity_upl
 
     private fun onClick() {
         binding.boardAdd.setOnClickListener {
-
-            finish()
+            // js 함수 호출
+            //binding.wv.loadUrl("javascript:fn_callBack_iOS()")
+            // js 반환값 있는 함수 호출
+            binding.wv.evaluateJavascript(FunctionJS.FUNCTION_GET_EDIT_DATA) { value ->
+                LogMgr.e(TAG, value.toString())
+                lifecycleScope.launch { binding.vmUpload?.insertBoard(value) }
+            }
         }
         binding.btnBack.setOnClickListener { finish() }
+    }
+
+    private fun observe() {
+        binding.vmUpload?.resultCode?.observe(this) {
+            when(it) {
+                ResponseCode.SUCCESS -> {
+                    Toast.makeText(this, "글 작성 완료", Toast.LENGTH_SHORT).show()
+                }
+                ResponseCode.BINDING_ERROR -> {
+                    Toast.makeText(this, "데이터를 잘못 전달하였습니다", Toast.LENGTH_SHORT).show()
+                }
+                ResponseCode.FAIL -> {
+                    Toast.makeText(this, "글 작성 실패", Toast.LENGTH_SHORT).show()
+                }
+                else -> {
+                    Toast.makeText(this, "에러", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
     }
 
     class Callback : WebViewClient() {
@@ -263,7 +292,7 @@ class UploadActivity : BaseActivity<ActivityUploadBinding>(R.layout.activity_upl
                     e.printStackTrace()
                 }
             }
-            onReceiveJavascript(data.intValue, data.stringValue)
+            //onReceiveJavascript(data.intValue, data.stringValue)
         }
     }
 }

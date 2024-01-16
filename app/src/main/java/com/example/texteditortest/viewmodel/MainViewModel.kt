@@ -4,15 +4,34 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.texteditortest.model.BoardData
+import com.example.texteditortest.network.ApiUrl
+import com.example.texteditortest.network.RetrofitApi
+import com.example.texteditortest.network.RetrofitClient
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class MainViewModel : ViewModel() {
-    val _boardItem = MutableLiveData<ArrayList<BoardData>?>()
-    val boardItem : LiveData<ArrayList<BoardData>?> = _boardItem
+    private val _boardItem = MutableLiveData<List<BoardData>?>()
+    val boardItem : LiveData<List<BoardData>?> = _boardItem
 
-    fun getListData() {
-        val data : ArrayList<BoardData> = arrayListOf()
-        for (i in 0 .. 10) data.add(BoardData("제목 테스트", "내용 테스트"))
+    private val _resultCode = MutableLiveData<Int>()
+    val resultCode : LiveData<Int> = _resultCode
 
-        _boardItem.postValue(data)
+    suspend fun getListData() {
+        withContext(Dispatchers.IO) {
+            val retrofit: RetrofitApi? = RetrofitClient.getRetrofitInstance(ApiUrl.BASE_URL).create(
+                RetrofitApi::class.java)
+            var getData : List<BoardData>? = null
+            val result = retrofit?.getBoardList()
+            if (result != null && result.isSuccessful) {
+                getData = result.body()?.data
+            }
+
+            withContext(Dispatchers.Main) {
+                if (getData != null) {
+                    _boardItem.postValue(getData)
+                }
+            }
+        }
     }
 }

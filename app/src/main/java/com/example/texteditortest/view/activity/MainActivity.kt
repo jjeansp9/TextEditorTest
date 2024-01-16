@@ -9,14 +9,17 @@ import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import com.example.texteditortest.R
 import com.example.texteditortest.databinding.ActivityMainBinding
+import com.example.texteditortest.network.ResponseCode
 import com.example.texteditortest.utils.LogMgr
 import com.example.texteditortest.view.adapter.BoardAdapter
 import com.example.texteditortest.viewmodel.MainViewModel
 import com.gun0912.tedpermission.PermissionListener
 import com.gun0912.tedpermission.normal.TedPermission
+import kotlinx.coroutines.launch
 
 class MainActivity : BaseActivity<ActivityMainBinding>(R.layout.activity_main) {
 
@@ -44,12 +47,12 @@ class MainActivity : BaseActivity<ActivityMainBinding>(R.layout.activity_main) {
         checkPermissions()
     }
     private fun initData() {
-        binding.vmMain?.getListData()
+        lifecycleScope.launch{ binding.vmMain?.getListData() }
     }
     private fun initView() {
         mAdapter = BoardAdapter(this, onItemClick = {
-            if (it.title != null) {
-                Toast.makeText(this, it.title, Toast.LENGTH_SHORT).show()
+            if (it.content != null) {
+                Toast.makeText(this, it.content, Toast.LENGTH_SHORT).show()
             }
         })
         binding.recycler.adapter = mAdapter
@@ -69,6 +72,22 @@ class MainActivity : BaseActivity<ActivityMainBinding>(R.layout.activity_main) {
         binding.vmMain?.boardItem?.observe(this) {
             if (it != null && it.isNotEmpty()) mAdapter.submitList(it)
             LogMgr.e(TAG, "data: " + it?.size)
+        }
+        binding.vmMain?.resultCode?.observe(this) {
+            when(it) {
+                ResponseCode.SUCCESS -> {
+
+                }
+                ResponseCode.BINDING_ERROR -> {
+                    Toast.makeText(this, "데이터를 불러오는 방법이 잘못되었습니다.", Toast.LENGTH_SHORT).show()
+                }
+                ResponseCode.NOT_FOUND -> {
+                    Toast.makeText(this, "데이터가 없습니다.", Toast.LENGTH_SHORT).show()
+                }
+                ResponseCode.FAIL -> {
+                    Toast.makeText(this, "데이터 불러오기 실패", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 
