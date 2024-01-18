@@ -142,8 +142,8 @@ class UploadActivity : BaseActivity<ActivityUploadBinding>(R.layout.activity_upl
 
         val wvClient = MyWebViewClient(this, binding.wv)
         binding.wv.webViewClient = wvClient
-        //binding.wv.webViewClient = Callback()
-
+        // binding.wv.webViewClient = Callback()
+        // https://tfb2i.csb.app/
         binding.wv.loadUrl("http://192.168.2.55:1212/avad/test/richText/ui")
 
         binding.wv.webChromeClient = object : WebChromeClient() {
@@ -164,7 +164,6 @@ class UploadActivity : BaseActivity<ActivityUploadBinding>(R.layout.activity_upl
                         photoFile = createImageFile()
                         takePictureIntent.putExtra("PhotoPath", mCM)
                     } catch (ex: IOException) {
-                        Log.e(TAG, "Image file creation failed", ex)
                     }
                     if (photoFile != null) {
                         mCM = "file:" + photoFile.absolutePath
@@ -197,7 +196,7 @@ class UploadActivity : BaseActivity<ActivityUploadBinding>(R.layout.activity_upl
             //binding.wv.loadUrl("javascript:fn_callBack_iOS()")
             // js 반환값 있는 함수 호출
             binding.wv.evaluateJavascript(FunctionJS.FUNCTION_GET_EDIT_DATA) { value ->
-                LogMgr.e(TAG, value.toString())
+                LogMgr.e(TAG + "web Text Data: ", value.toString())
                 lifecycleScope.launch { binding.vmUpload?.insertBoard(value) }
             }
         }

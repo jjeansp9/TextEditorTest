@@ -14,11 +14,12 @@ import kotlinx.coroutines.withContext
 class UploadViewModel : ViewModel() {
     private val _resultCode = MutableLiveData<Int>()
     val resultCode : LiveData<Int> = _resultCode
-    suspend fun insertBoard(str: String) {
+    suspend fun insertBoard(str: String?) {
 
         val board = BoardData()
 
-        board.content = str
+        if (str != null) board.content = str
+        else board.content = ""
 
         withContext(Dispatchers.IO) {
             val retrofit: RetrofitApi? = RetrofitClient.getRetrofitInstance(ApiUrl.BASE_URL).create(RetrofitApi::class.java)

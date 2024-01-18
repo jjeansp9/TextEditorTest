@@ -25,9 +25,9 @@
             app:layout_constraintEnd_toStartOf="@id/img"
             android:textSize="16sp"
             android:textStyle="bold"
-            android:hint="제목 없음"
-            android:text="@{item.title == null | item.title.isEmpty() ? (``) : item.title}"
-            android:visibility="@{item.title == null | item.title.isEmpty() ? View.GONE : View.VISIBLE}"/>
+            android:hint="제목 없음"/>
+<!--        android:text="@{item.title == null | item.title.isEmpty() ? (``) : item.title}"-->
+<!--        android:visibility="@{item.title == null | item.title.isEmpty() ? View.GONE : View.VISIBLE}"/>-->
 
         <TextView
             android:id="@+id/tv_content"

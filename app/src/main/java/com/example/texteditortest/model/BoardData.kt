@@ -5,6 +5,6 @@ data class BoardData(
     var content: String? = "",
 
 
-    var title: String? = "",
-    var img: String? = "",
+//    var title: String? = "",
+//    var img: String? = "",
 )
