@@ -3,13 +3,13 @@ package com.example.texteditortest.view.activity
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.ClipData
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
-import android.util.Log
 import android.view.KeyEvent
 import android.view.View
 import android.webkit.ValueCallback
@@ -17,7 +17,6 @@ import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.widget.Toast
-import android.window.OnBackInvokedDispatcher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.annotation.NonNull
@@ -27,6 +26,7 @@ import com.example.texteditortest.R
 import com.example.texteditortest.common.MyWebViewClient
 import com.example.texteditortest.databinding.ActivityMainBinding
 import com.example.texteditortest.network.ResponseCode
+import com.example.texteditortest.utils.FileUtils
 import com.example.texteditortest.utils.LogMgr
 import com.example.texteditortest.view.adapter.BoardAdapter
 import com.example.texteditortest.viewmodel.MainViewModel
@@ -44,52 +44,60 @@ class MainActivity : BaseActivity<ActivityMainBinding>(R.layout.activity_main) {
     private val viewModel: MainViewModel by viewModels()
     private lateinit var mAdapter : BoardAdapter
 
-    private var mCM: String? = null
+    private var mCM: File? = null
     private var mUM: ValueCallback<Uri?>? = null
     private var mUMA: ValueCallback<Array<Uri>>? = null
-    private val FCR = 1
 
     private val resultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             if (result.data != null) {
-
-            }
-        } else {
-        }
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, intent: Intent?) {
-        super.onActivityResult(requestCode, resultCode, intent)
-        if (Build.VERSION.SDK_INT >= 21) {
-            var results: Array<Uri>? = null
-            //Check if response is positive
-            if (resultCode == RESULT_OK) {
-                if (requestCode == FCR) {
-                    if (null == mUMA) {
-                        return
-                    }
+                var results: Array<Uri>? = null
+                var tests: Array<Uri>? = null
+                if (null != mUMA) {
                     if (intent == null) {
-                        //Capture Photo if no image available
                         if (mCM != null) {
-                            results = arrayOf(Uri.parse(mCM))
+                            results = arrayOf(Uri.parse("file:" + mCM?.absolutePath))
+                            LogMgr.e(TAG + "resultLauncher1-1", results.toString())
                         }
+
                     } else {
-                        val dataString = intent.dataString
-                        if (dataString != null) {
-                            results = arrayOf(Uri.parse(dataString))
+                        val uri : Uri? = result!!.data?.data // uri
+                        val clipData : ClipData? = result.data?.clipData
+
+                        if (clipData != null) {
+                            LogMgr.e(TAG + "resultLauncher2", clipData.toString())
+
+                        } else if (uri != null) {
+                            LogMgr.e(TAG + "resultLauncher3", uri.toString())
+
+                            val jpgPath = FileUtils.getFromPathUri(this, uri)
+
+                            if (jpgPath != null) {
+                                LogMgr.e(TAG + "resultLauncher4", jpgPath)
+                                results = arrayOf(Uri.parse("file:" + jpgPath))
+
+                                LogMgr.e(TAG + "resultLauncher4-1", results.toString())
+
+                            } else {
+                                LogMgr.e(TAG + "resultLauncher4-2", "null")
+                            }
+                        }
+                        if (results != null) {
+                            mUMA!!.onReceiveValue(results)
+                            mUMA = null
                         }
                     }
+
+//                    if (results != null) {
+//                        LogMgr.e(TAG + "resultLauncher4-3", results.toString())
+//                        mUMA!!.onReceiveValue(results)
+//                        mUMA = null
+//                    }
                 }
+
             }
-            mUMA!!.onReceiveValue(results)
-            mUMA = null
         } else {
-            if (requestCode == FCR) {
-                if (null == mUM) return
-                val result = if (intent == null || resultCode != RESULT_OK) null else intent.data
-                mUM!!.onReceiveValue(result)
-                mUM = null
-            }
+
         }
     }
 
@@ -152,25 +160,31 @@ class MainActivity : BaseActivity<ActivityMainBinding>(R.layout.activity_main) {
                     } catch (ex: IOException) {
                     }
                     if (photoFile != null) {
-                        mCM = "file:" + photoFile.absolutePath
+                        mCM = photoFile
                         takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(photoFile))
                     } else {
                         takePictureIntent = null
                     }
                 }
-                val contentSelectionIntent = Intent(Intent.ACTION_GET_CONTENT)
-                contentSelectionIntent.addCategory(Intent.CATEGORY_OPENABLE)
-                contentSelectionIntent.type = "*/*"
-                val intentArray: Array<Intent?> = if (takePictureIntent != null) {
-                    arrayOf(takePictureIntent)
-                } else {
-                    arrayOfNulls(0)
+                val contentSelectionIntent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                    //addCategory(Intent.CATEGORY_OPENABLE)
+                    action = if (Build.VERSION_CODES.Q >= Build.VERSION.SDK_INT) Intent.ACTION_GET_CONTENT
+                             else Intent.ACTION_PICK
+                    type = "*/*"
+//                    putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+//                    putExtra(Intent.EXTRA_LOCAL_ONLY, true)
                 }
-                val chooserIntent = Intent(Intent.ACTION_CHOOSER)
-                chooserIntent.putExtra(Intent.EXTRA_INTENT, contentSelectionIntent)
-                chooserIntent.putExtra(Intent.EXTRA_TITLE, "Image Chooser")
-                chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray)
-                startActivityForResult(chooserIntent, FCR)
+
+                val intentArray: Array<Intent?> = if (takePictureIntent != null) arrayOf(takePictureIntent)
+                                                  else arrayOfNulls(0)
+
+                val chooserIntent = Intent(Intent.ACTION_CHOOSER).apply {
+                    putExtra(Intent.EXTRA_INTENT, contentSelectionIntent)
+                    putExtra(Intent.EXTRA_TITLE, "Image Chooser")
+                    putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray)
+                }
+                resultLauncher.launch(chooserIntent)
+                //startActivityForResult(chooserIntent, FCR)
                 return true
             }
         }
